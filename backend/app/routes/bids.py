@@ -94,3 +94,26 @@ async def get_current_bid(
         "user_name": f"{user.last_name} {user.name}",
         "created_at": bid.created_at
     }
+
+@router.get("/{painting_id}/history")
+async def get_bid_history(
+    painting_id: UUID,
+    db: Session = Depends(get_db)
+):
+    bids = db.query(BidModel).filter(
+        BidModel.painting_id == painting_id
+    ).order_by(BidModel.created_at.desc()).all()
+
+    if not bids:
+        return []
+
+    history = []
+    for bid in bids:
+        user = db.query(UserModel).filter(UserModel.id == bid.user_id).first()
+        history.append({
+            "user_name": f"{user.last_name} {user.name}",
+            "amount": bid.amount,
+            "created_at": bid.created_at.strftime("%Y-%m-%d %H:%M")
+        })
+
+    return history

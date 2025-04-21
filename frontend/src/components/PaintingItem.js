@@ -3,6 +3,7 @@ import axios from 'axios';
 import jwtDecode from 'jwt-decode';
 import { useNavigate } from 'react-router-dom';
 import '../styles/PaintingItem.css';
+import BidHistory from './BidHistory';
 
 export default function PaintingItem({ painting = {}, onClose, isAdmin }) {
   // Устанавливаем значения по умолчанию для painting
@@ -157,6 +158,7 @@ export default function PaintingItem({ painting = {}, onClose, isAdmin }) {
               <a href="/login" className="login-link">Login</a>
             </div>
           )}
+        <BidHistory paintingId={painting.id} />
         </div>
       </div>
     </div>
