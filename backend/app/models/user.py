@@ -13,6 +13,6 @@ class User(Base):
     name = Column(String)
     last_name = Column(String)
     password = Column(String)
-    role = Column(String, default="user")  # Изменяем is_admin на role
+    role = Column(String, default="user")
 
     bids = relationship("Bid", back_populates="user")

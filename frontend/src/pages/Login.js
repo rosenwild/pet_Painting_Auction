@@ -27,7 +27,7 @@ function Login() {
       localStorage.setItem('user', JSON.stringify(response.data.user));
 
       navigate('/');
-      window.location.reload(); // Обновляем страницу для применения изменений
+      window.location.reload();
     } catch (error) {
       setMessage(error.response?.data?.detail || 'Login failed');
     }

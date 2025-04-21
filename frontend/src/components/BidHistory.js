@@ -1,43 +1,81 @@
-// components/BidHistory.js
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import PropTypes from 'prop-types';
+
+const API_BASE_URL = 'http://localhost:8000';
 
 export default function BidHistory({ paintingId }) {
-  const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [bidHistory, setBidHistory] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchBidHistory = async () => {
       try {
-        const response = await axios.get(
-          `http://localhost:8000/bids/${paintingId}/history`
+        const { data } = await axios.get(
+          `${API_BASE_URL}/bids/${paintingId}/history`
         );
-        setHistory(response.data);
-      } catch (error) {
-        console.error('Error fetching bid history:', error);
+        setBidHistory(data);
+      } catch (err) {
+        console.error('Error fetching bid history:', err);
+        setError('Failed to load bid history');
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
     fetchBidHistory();
   }, [paintingId]);
 
-  if (loading) return <div>Loading history...</div>;
-  if (history.length === 0) return <div>No bids yet</div>;
+  const renderContent = () => {
+    if (isLoading) {
+      return <div className="loading-message">Loading history...</div>;
+    }
 
+    if (error) {
+      return <div className="error-message">{error}</div>;
+    }
+
+    if (bidHistory.length === 0) {
+      return <div className="empty-message">No bids yet</div>;
+    }
+
+    return (
+      <>
+        <h3 className="bid-history-title">Bid History:</h3>
+        <ul className="bid-history-list">
+          {bidHistory.map((bid) => (
+            <BidItem key={`${bid.user_id}-${bid.created_at}`} bid={bid} />
+          ))}
+        </ul>
+      </>
+    );
+  };
+
+  return <div className="bid-history-container">{renderContent()}</div>;
+}
+
+function BidItem({ bid }) {
   return (
-    <div className="bid-history">
-      <h3>Bid History:</h3>
-      <ul>
-        {history.map((bid, index) => (
-          <li key={index} className="bid-item">
-            <span className="bid-user">{bid.user_name}</span>
-            <span className="bid-amount">${bid.amount.toLocaleString()}</span>
-            <span className="bid-date">{bid.created_at}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <li className="bid-item">
+      <span className="bid-user">{bid.user_name}</span>
+      <span className="bid-amount">${bid.amount.toLocaleString()}</span>
+      <span className="bid-date">
+        {new Date(bid.created_at).toLocaleString()}
+      </span>
+    </li>
   );
 }
+
+BidHistory.propTypes = {
+  paintingId: PropTypes.string.isRequired,
+};
+
+BidItem.propTypes = {
+  bid: PropTypes.shape({
+    user_id: PropTypes.string,
+    user_name: PropTypes.string,
+    amount: PropTypes.number,
+    created_at: PropTypes.string,
+  }).isRequired,
+};

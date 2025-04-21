@@ -19,25 +19,23 @@ class BidCreate(BaseModel):
 @router.post("/{painting_id}")
 async def place_bid(
         painting_id: UUID,
-        bid_data: BidCreate,  # Теперь ожидаем JSON с полем amount
+        bid_data: BidCreate,
         current_user: UserModel = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
-    amount = bid_data.amount  # Получаем amount из модели
+    amount = bid_data.amount
 
-    # Остальной код остается без изменений
     if amount < 1000:
         raise HTTPException(
             status_code=400,
-            detail="Извините, минимальная сумма шага - 1000 рублей"
+            detail="Sorry, minimum bid step amount is 1000."
         )
 
     # 2. Получаем картину
     painting = db.query(PaintingModel).filter(PaintingModel.id == painting_id).first()
     if not painting:
-        raise HTTPException(status_code=404, detail="Картина не найдена")
+        raise HTTPException(status_code=404, detail="Painting not found")
 
-    # 3. Проверяем текущую максимальную ставку
     current_max_bid = db.query(BidModel).filter(
         BidModel.painting_id == painting_id
     ).order_by(BidModel.amount.desc()).first()
@@ -45,10 +43,9 @@ async def place_bid(
     if current_max_bid and amount <= current_max_bid.amount:
         raise HTTPException(
             status_code=400,
-            detail=f"Ваша ставка должна быть выше текущей максимальной ({current_max_bid.amount} руб.)"
+            detail=f"Your bid must be higher than {current_max_bid.amount}."
         )
 
-    # 4. Создаем новую ставку
     new_bid = BidModel(
         amount=amount,
         painting_id=painting_id,
@@ -57,16 +54,14 @@ async def place_bid(
     )
     db.add(new_bid)
 
-    # 5. Обновляем цену картины
     painting.price = amount
     db.commit()
     db.refresh(new_bid)
     db.refresh(painting)
 
-    # 6. Возвращаем информацию о ставке
     return {
         "success": True,
-        "message": "Ставка принята",
+        "message": "bid accepted",
         "current_bid": {
             "amount": amount,
             "user_name": f"{current_user.last_name} {current_user.name}",
@@ -85,7 +80,7 @@ async def get_current_bid(
     ).order_by(BidModel.amount.desc()).first()
 
     if not bid:
-        return {"message": "Нет ставок для этой картины"}
+        return {"message": "no bids yet"}
 
     user = db.query(UserModel).filter(UserModel.id == bid.user_id).first()
 

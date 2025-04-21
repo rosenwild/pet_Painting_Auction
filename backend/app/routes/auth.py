@@ -18,7 +18,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         email=user.email,
         name=user.name,
         last_name=user.last_name,
-        role=user.role.value,  # Используем .value для Enum
+        role=user.role.value,
         password=hashed_password
     )
     db.add(db_user)

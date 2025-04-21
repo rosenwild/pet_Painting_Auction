@@ -5,92 +5,112 @@ import { useNavigate } from 'react-router-dom';
 import '../styles/PaintingItem.css';
 import BidHistory from './BidHistory';
 
+const API_BASE_URL = 'http://localhost:8000';
+
 export default function PaintingItem({ painting, onClose, isAdmin, refreshList }) {
+  // Значения по умолчанию для Paintings
   const {
     id,
-    name,
-    photo,
-    author,
-    price,
-    type,
+    name = '',
+    photo = '',
+    author = '',
+    price = 0,
+    type = '',
     is_bid_active: initialBidStatus = true
   } = painting || {};
 
-  const [bidAmount, setBidAmount] = useState(price ? price + 1000 : 1000);
+  // Стейты
+  const [bidAmount, setBidAmount] = useState(price + 1000);
   const [message, setMessage] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [bidStatus, setBidStatus] = useState(initialBidStatus);
+
   const navigate = useNavigate();
 
-  // Инициализация и проверка аутентификации
+  // Инициализация токенов, чек
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
+    const checkAuthStatus = () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setIsAuthenticated(false);
+        return;
+      }
+
       try {
-        const decoded = jwtDecode(token);
-        setIsAuthenticated(decoded.exp * 1000 > Date.now());
+        const { exp } = jwtDecode(token);
+        setIsAuthenticated(exp * 1000 > Date.now());
       } catch {
         setIsAuthenticated(false);
       }
-    }
+    };
 
-    // Синхронизация с актуальным статусом из пропсов
+    checkAuthStatus();
     setBidStatus(initialBidStatus);
   }, [initialBidStatus]);
 
- const handleBid = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setMessage('You need to login to place a bid');
-          navigate('/login');
-          return;
-        }
+  // АПИ коллы, обработка ошибок
+  const handleApiError = (error, defaultMessage) => {
+    console.error('API Error:', error);
+    return error.response?.data?.detail || defaultMessage;
+  };
 
-        const response = await axios.post(
-          `http://localhost:8000/bids/${id}`,
-          { amount: bidAmount },
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            validateStatus: (status) => status < 500 // Не выбрасывать ошибку для 4xx статусов
-          }
-        );
+  const handleBid = async () => {
+    if (!bidStatus) {
+      setMessage('Bidding is closed for this painting');
+      return;
+    }
 
-        if (response.status === 401) {
-          setMessage('Session expired. Please login again.');
-          localStorage.removeItem('token');
-          navigate('/login');
-          return;
-        }
-
-        if (response.status === 422) {
-          // Обрабатываем ошибки валидации
-          const errorMsg = response.data.detail?.[0]?.msg || 'Invalid bid amount';
-          setMessage(`Error: ${errorMsg}`);
-          return;
-        }
-
-        if (response.status !== 200) {
-          setMessage(response.data?.detail || 'Bid failed');
-          return;
-        }
-
-        setMessage('Bid placed successfully!');
-        setTimeout(() => onClose(true), 1000);
-      } catch (error) {
-        console.error('Bid error:', error);
-        setMessage('Network error. Please try again.');
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setMessage('You need to login to place a bid');
+        navigate('/login');
+        return;
       }
-    };
+
+      const response = await axios.post(
+        `${API_BASE_URL}/bids/${id}`,
+        { amount: bidAmount },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          validateStatus: status => status < 500
+        }
+      );
+
+      if (response.status === 401) {
+        setMessage('Session expired. Please login again.');
+        localStorage.removeItem('token');
+        navigate('/login');
+        return;
+      }
+
+      if (response.status === 422) {
+        const errorMsg = response.data.detail?.[0]?.msg || 'Invalid bid amount';
+        setMessage(`Error: ${errorMsg}`);
+        return;
+      }
+
+      if (response.status !== 200) {
+        setMessage(response.data?.detail || 'Bid failed');
+        return;
+      }
+
+      setMessage('Bid placed successfully!');
+      setTimeout(() => onClose(true), 1000);
+    } catch (error) {
+      setMessage(handleApiError(error, 'Network error. Please try again.'));
+    }
+  };
+
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this painting?')) return;
 
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:8000/paintings/${id}`, {
+      await axios.delete(`${API_BASE_URL}/paintings/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -99,7 +119,7 @@ export default function PaintingItem({ painting, onClose, isAdmin, refreshList }
       refreshList();
       onClose(false);
     } catch (error) {
-      setMessage(error.response?.data?.detail || 'Delete failed. Check admin permissions.');
+      setMessage(handleApiError(error, 'Delete failed. Check admin permissions.'));
     }
   };
 
@@ -107,72 +127,85 @@ export default function PaintingItem({ painting, onClose, isAdmin, refreshList }
     try {
       const token = localStorage.getItem('token');
       const { data } = await axios.patch(
-        `http://localhost:8000/paintings/${id}/toggle-bid`,
+        `${API_BASE_URL}/paintings/${id}/toggle-bid`,
         {},
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
 
       setBidStatus(data.is_bid_active);
-      refreshList(); // Полностью обновляем данные
+      refreshList();
       setMessage(`Bidding ${data.is_bid_active ? 'reopened' : 'closed'} successfully`);
     } catch (error) {
-      setMessage(error.response?.data?.detail || 'Failed to update bid status');
+      setMessage(handleApiError(error, 'Failed to update bid status'));
     }
   };
 
   if (!painting) return null;
 
+  // рендер хелперов
+  const renderBidSection = () => {
+    if (!bidStatus) return null;
+
+    return isAuthenticated ? (
+      <div className="bid-section">
+        <div className="bid-input-group">
+          <label htmlFor="bidAmount">Your bid:</label>
+          <input
+            id="bidAmount"
+            type="number"
+            value={bidAmount}
+            onChange={e => setBidAmount(Number(e.target.value))}
+            min={price + 1000}
+            step="1000"
+          />
+        </div>
+        <button onClick={handleBid} className="bid-button">
+          Place Bid (+1000)
+        </button>
+      </div>
+    ) : (
+      <div className="login-prompt">
+        <p>Please login to place a bid</p>
+        <button onClick={() => navigate('/login')}>Login</button>
+      </div>
+    );
+  };
+
+  const renderAdminActions = () => {
+    if (!isAdmin) return null;
+
+    return (
+      <div className="admin-actions">
+        <button
+          onClick={toggleBidStatus}
+          className={bidStatus ? 'close-bid-btn' : 'open-bid-btn'}
+        >
+          {bidStatus ? 'Close Bid' : 'Re-Open Bid'}
+        </button>
+        <button onClick={handleDelete} className="delete-btn">
+          Delete Painting
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div className="modal">
       <div className="modal-content">
         <span className="close" onClick={() => onClose(false)}>&times;</span>
+
         <img src={photo} alt={name} className="painting-image" />
+
         <div className="painting-details">
           <h2>{name}</h2>
           {!bidStatus && <div className="bid-closed-label">BID CLOSED</div>}
+
           <p><strong>Artist:</strong> {author}</p>
-          <p><strong>Current Price:</strong> ${price?.toLocaleString()}</p>
+          <p><strong>Current Price:</strong> ${price.toLocaleString()}</p>
           <p><strong>Type:</strong> {type}</p>
 
-          {bidStatus && isAuthenticated && (
-            <div className="bid-section">
-              <div className="bid-input-group">
-                <label htmlFor="bidAmount">Your bid:</label>
-                <input
-                  id="bidAmount"
-                  type="number"
-                  value={bidAmount}
-                  onChange={(e) => setBidAmount(Number(e.target.value))}
-                  min={price + 1000}
-                  step="1000"
-                />
-              </div>
-              <button onClick={handleBid} className="bid-button">
-                Place Bid (+1000)
-              </button>
-            </div>
-          )}
-
-          {!isAuthenticated && bidStatus && (
-            <div className="login-prompt">
-              <p>Please login to place a bid</p>
-              <button onClick={() => navigate('/login')}>Login</button>
-            </div>
-          )}
-
-          {isAdmin && (
-            <div className="admin-actions">
-              <button
-                onClick={toggleBidStatus}
-                className={bidStatus ? 'close-bid-btn' : 'open-bid-btn'}
-              >
-                {bidStatus ? 'Close Bid' : 'Re-Open Bid'}
-              </button>
-              <button onClick={handleDelete} className="delete-btn">
-                Delete Painting
-              </button>
-            </div>
-          )}
+          {renderBidSection()}
+          {renderAdminActions()}
 
           {message && (
             <p className={`message ${message.includes('success') ? 'success' : 'error'}`}>

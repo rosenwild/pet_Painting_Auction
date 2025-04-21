@@ -106,14 +106,11 @@ def get_current_admin(
         )
     return current_user
 
-
-# В вашем router (обычно в routes/paintings.py)
-
 @router.patch("/{painting_id}/toggle-bid", response_model=PaintingSchema)
 async def toggle_bid_status(
         painting_id: UUID,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_admin)  # Проверка прав админа
+        current_user: User = Depends(get_current_admin)
 ):
     painting = db.query(Painting).filter(Painting.id == painting_id).first()
     if not painting:
@@ -129,7 +126,7 @@ async def toggle_bid_status(
 async def delete_painting(
         painting_id: UUID,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_admin)  # Проверка прав админа
+        current_user: User = Depends(get_current_admin)
 ):
     painting = db.query(Painting).filter(Painting.id == painting_id).first()
     if not painting:

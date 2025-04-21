@@ -7,12 +7,9 @@ from app.models.bid import Bid
 from app.database import init_db, SessionLocal
 from app.routes import paintings, bids, auth
 
-# Создание таблиц
 init_db()
 
 app = FastAPI()
-
-# Настройка CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,7 +18,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Подключение роутеров
 app.include_router(auth.router)
 app.include_router(bids.router)
 app.include_router(paintings.router)

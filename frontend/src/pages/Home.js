@@ -26,12 +26,12 @@ function Home() {
       setIsAdmin(decoded.role === 'admin');
     }
     fetchPaintings();
-  }, [token, refreshTrigger]); // Добавляем refreshTrigger в зависимости
+  }, [token, refreshTrigger]);
 
   const handleCloseModal = (shouldRefresh) => {
     setSelectedPainting(null);
     if (shouldRefresh) {
-      setRefreshTrigger(prev => !prev); // Используем триггер для обновления
+      setRefreshTrigger(prev => !prev);
     }
   };
 

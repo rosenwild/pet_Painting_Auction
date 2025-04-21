@@ -16,6 +16,5 @@ class Bid(Base):
     painting_id = Column(UUID(as_uuid=True), ForeignKey("paintings.id"))
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
 
-    # Определяем отношения
     painting = relationship("Painting", back_populates="bids")
     user = relationship("User", back_populates="bids")

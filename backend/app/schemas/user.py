@@ -14,7 +14,7 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     name: str
     last_name: str
-    role: Role = Role.user  # Устанавливаем значение по умолчанию
+    role: Role = Role.user
     password: str
 
 class UserLogin(UserBase):

@@ -4,14 +4,13 @@ from sqlalchemy.orm import sessionmaker
 from pydantic import BaseSettings
 
 class Settings(BaseSettings):
-    SECRET_KEY = "your-secret-key"  # Замените на настоящий секретный ключ
+    SECRET_KEY = "your-secret-key"
     ALGORITHM = "HS256"
     DATABASE_URL: str = "postgresql://postgres:password@db:5432/postgres"
 
     class Config:
         env_file = ".env"
 
-# Инициализация базы данных
 Base = declarative_base()
 engine = create_engine(Settings().DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

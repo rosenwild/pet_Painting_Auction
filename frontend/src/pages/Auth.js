@@ -23,7 +23,7 @@ function Auth() {
     try {
       await axios.post('http://localhost:8000/auth/register', {
         ...formData,
-        role: formData.role // Отправляем role как строку
+        role: formData.role
       });
       setMessage('Registration successful! Redirecting to login...');
       setTimeout(() => navigate('/login'), 1500);
