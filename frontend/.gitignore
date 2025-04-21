@@ -1,0 +1,81 @@
+# Node.js папка с зависимостями
+node_modules/
+
+<<<<<<< HEAD
+
+=======
+>>>>>>> dev
+# Лог-файлы
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Локальные конфигурации среды разработки
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Локальные конфигурации инструментов
+.vscode/
+.idea/
+
+# Кэш и временные файлы
+.DS_Store
+*.log
+
+# Файлы и папки сборки
+build/
+dist/
+
+# Папка с публичными файлами (если она генерируется)
+public/
+
+# ESLint кэш
+.eslintcache
+
+# Файлы отчета
+coverage/
+*.tgz
+.vscode/
+
+# Бэкапы и временные файлы редактора
+*~
+*.swp
+*.swo
+*.tmp
+*.bak
+
+# Файлы npm
+package-lock.json
+yarn.lock
+.pnpm-debug.log*
+
+# Кэш парсера Jest
+.cache/
+.jest/
+
+# Log files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Папка отчетов тестов (например, jest)
+coverage/
+
+# Сгенерированные файлы
+*.css.map
+*.js.map
+
+# Кэш браузера
+.cache/
+
+<<<<<<< HEAD
+#папка arg
+=======
+#папка arg
+arg/
+>>>>>>> dev
