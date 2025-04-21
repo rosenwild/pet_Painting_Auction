@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
+import '../styles/App.css';
 
 export default function ProfileButton() {
   const navigate = useNavigate();

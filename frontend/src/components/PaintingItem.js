@@ -3,6 +3,7 @@ import axios from 'axios';
 import jwtDecode from 'jwt-decode';
 import { useNavigate } from 'react-router-dom';
 import '../styles/PaintingItem.css';
+import '../styles/App.css';
 import BidHistory from './BidHistory';
 
 const API_BASE_URL = 'http://localhost:8000';
@@ -160,7 +161,7 @@ export default function PaintingItem({ painting, onClose, isAdmin, refreshList }
           />
         </div>
         <button onClick={handleBid} className="bid-button">
-          Place Bid (+1000)
+          Place Bid
         </button>
       </div>
     ) : (

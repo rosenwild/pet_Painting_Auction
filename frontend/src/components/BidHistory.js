@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import PropTypes from 'prop-types';
+import '../styles/App.css';
 
 const API_BASE_URL = 'http://localhost:8000';
 
