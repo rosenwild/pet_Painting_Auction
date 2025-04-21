@@ -8,25 +8,29 @@
 # Демонстрация проекта
 
 ## Route list
-![](/project_imgs/routes.png)
+![](/project_imgs/routes.jpg)
 
 ## Schemas
 Используются таблицы для регистрации и авторизации пользователей на основе jwt токенов и для хранения информации о картинах 
 
-![](/project_imgs/Schemas.png)
+![](/project_imgs/schemas1.jpg)
+
+![](/project_imgs/schemas2.jpg)
+
+![](/project_imgs/schemas3.jpg)
 
 ## Homepage
-![](/project_imgs/homepage.png)
+![](/project_imgs/homepage.jpg)
 
 ## Auth&Login pages
 Страницы регистрации и авторизации позволяют пользователям получить роли, которые увеличивают функционал приложения
 
-![](/project_imgs/auth_page.png)
-![](/project_imgs/login_page.png)
+![](/project_imgs/register.jpg)
+![](/project_imgs/login.jpg)
 
 ## Painting
 После авторизации по роли админа можно удалять картины, переназначать им цену и добавлять новые
 
-![](/project_imgs/price.png)
+![](/project_imgs/newpainting.jpg)
 
-![](/project_imgs/new_painting.png)
+![](/project_imgs/paintingItem.jpg)
