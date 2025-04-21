@@ -15,31 +15,23 @@ function Login() {
     setFormData({...formData, [e.target.name]: e.target.value});
   };
 
-  // Login.js
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    const response = await axios.post('http://localhost:8000/auth/login', {
-      email: formData.email,
-      password: formData.password
-    });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post('http://localhost:8000/auth/login', {
+        email: formData.email,
+        password: formData.password
+      });
 
-    localStorage.setItem('token', response.data.access_token);
+      localStorage.setItem('token', response.data.access_token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
 
-    // Декодируем токен и сохраняем данные пользователя
-    const decoded = jwtDecode(response.data.access_token);
-    localStorage.setItem('user', JSON.stringify({
-      email: decoded.sub,
-      firstName: decoded.first_name, // убедитесь, что эти поля есть в токене
-      lastName: decoded.last_name
-    }));
-
-    navigate('/');
-  } catch (error) {
-    setMessage(error.response?.data?.detail || 'Login failed');
-  }
-};
-
+      navigate('/');
+      window.location.reload(); // Обновляем страницу для применения изменений
+    } catch (error) {
+      setMessage(error.response?.data?.detail || 'Login failed');
+    }
+  };
 
   return (
     <div className="auth-container">

@@ -3,7 +3,6 @@ import PaintingItem from '../components/PaintingItem';
 import axios from 'axios';
 import jwtDecode from 'jwt-decode';
 import '../styles/App.css';
-import ProfileButton from '../components/ProfileButton';
 
 function Home() {
   const [paintings, setPaintings] = useState([]);
@@ -45,11 +44,6 @@ function Home() {
         <h1>Art Gallery</h1>
         {token && isAdmin && ( // Показываем только админам
           <a href="/create">Add Painting</a>
-        )}
-        {token ? (
-          <ProfileButton />
-        ) : (
-          <a href="/login">Login</a>
         )}
       </header>
 
