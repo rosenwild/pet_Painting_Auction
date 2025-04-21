@@ -13,6 +13,6 @@ class PaintingCreate(PaintingBase):
 
 class Painting(PaintingBase):
     id: UUID
-
+    is_bid_active: bool
     class Config:
         orm_mode = True

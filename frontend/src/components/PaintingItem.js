@@ -5,49 +5,40 @@ import { useNavigate } from 'react-router-dom';
 import '../styles/PaintingItem.css';
 import BidHistory from './BidHistory';
 
-export default function PaintingItem({ painting = {}, onClose, isAdmin }) {
-  // Устанавливаем значения по умолчанию для painting
+export default function PaintingItem({ painting, onClose, isAdmin, refreshList }) {
   const {
-    id = '',
-    name = '',
-    photo = '',
-    author = '',
-    price = 0,
-    type = ''
-  } = painting;
+    id,
+    name,
+    photo,
+    author,
+    price,
+    type,
+    is_bid_active: initialBidStatus = true
+  } = painting || {};
 
-  const [bidAmount, setBidAmount] = useState(price + 1000);
+  const [bidAmount, setBidAmount] = useState(price ? price + 1000 : 1000);
   const [message, setMessage] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [bidStatus, setBidStatus] = useState(initialBidStatus);
   const navigate = useNavigate();
 
+  // Инициализация и проверка аутентификации
   useEffect(() => {
-    const validateToken = () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setIsAuthenticated(false);
-        return;
-      }
-
+    const token = localStorage.getItem('token');
+    if (token) {
       try {
         const decoded = jwtDecode(token);
-        if (decoded.exp * 1000 < Date.now()) {
-          localStorage.removeItem('token');
-          setIsAuthenticated(false);
-        } else {
-          setIsAuthenticated(true);
-        }
-      } catch (error) {
-        console.error('Invalid token:', error);
-        localStorage.removeItem('token');
+        setIsAuthenticated(decoded.exp * 1000 > Date.now());
+      } catch {
         setIsAuthenticated(false);
       }
-    };
+    }
 
-    validateToken();
-  }, []);
+    // Синхронизация с актуальным статусом из пропсов
+    setBidStatus(initialBidStatus);
+  }, [initialBidStatus]);
 
-  const handleBid = async () => {
+ const handleBid = async () => {
       try {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -94,40 +85,56 @@ export default function PaintingItem({ painting = {}, onClose, isAdmin }) {
         setMessage('Network error. Please try again.');
       }
     };
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this painting?')) return;
 
-
-  const handleClose = () => {
-    onClose(false);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:8000/paintings/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      refreshList();
+      onClose(false);
+    } catch (error) {
+      setMessage(error.response?.data?.detail || 'Delete failed. Check admin permissions.');
+    }
   };
 
-  // Рендерим компонент только если есть минимально необходимые данные
-  if (!id) {
-    return (
-      <div className="modal">
-        <div className="modal-content">
-          <span className="close" onClick={handleClose}>&times;</span>
-          <p>Error: Painting data not available</p>
-        </div>
-      </div>
-    );
-  }
+  const toggleBidStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const { data } = await axios.patch(
+        `http://localhost:8000/paintings/${id}/toggle-bid`,
+        {},
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+
+      setBidStatus(data.is_bid_active);
+      refreshList(); // Полностью обновляем данные
+      setMessage(`Bidding ${data.is_bid_active ? 'reopened' : 'closed'} successfully`);
+    } catch (error) {
+      setMessage(error.response?.data?.detail || 'Failed to update bid status');
+    }
+  };
+
+  if (!painting) return null;
 
   return (
     <div className="modal">
       <div className="modal-content">
-        <span className="close" onClick={handleClose}>&times;</span>
-        <img
-          src={photo}
-          alt={name}
-          className="painting-image"
-        />
+        <span className="close" onClick={() => onClose(false)}>&times;</span>
+        <img src={photo} alt={name} className="painting-image" />
         <div className="painting-details">
           <h2>{name}</h2>
+          {!bidStatus && <div className="bid-closed-label">BID CLOSED</div>}
           <p><strong>Artist:</strong> {author}</p>
-          <p><strong>Current Price:</strong> ${price}</p>
+          <p><strong>Current Price:</strong> ${price?.toLocaleString()}</p>
           <p><strong>Type:</strong> {type}</p>
 
-          {isAuthenticated ? (
+          {bidStatus && isAuthenticated && (
             <div className="bid-section">
               <div className="bid-input-group">
                 <label htmlFor="bidAmount">Your bid:</label>
@@ -140,25 +147,40 @@ export default function PaintingItem({ painting = {}, onClose, isAdmin }) {
                   step="1000"
                 />
               </div>
-              <button
-                onClick={handleBid}
-                className="bid-button"
-              >
+              <button onClick={handleBid} className="bid-button">
                 Place Bid (+1000)
               </button>
-              {message && (
-                <p className={`message ${message.includes('success') ? 'success' : 'error'}`}>
-                  {message}
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="login-prompt">
-              <p>Please login to place a bid</p>
-              <a href="/login" className="login-link">Login</a>
             </div>
           )}
-        <BidHistory paintingId={painting.id} />
+
+          {!isAuthenticated && bidStatus && (
+            <div className="login-prompt">
+              <p>Please login to place a bid</p>
+              <button onClick={() => navigate('/login')}>Login</button>
+            </div>
+          )}
+
+          {isAdmin && (
+            <div className="admin-actions">
+              <button
+                onClick={toggleBidStatus}
+                className={bidStatus ? 'close-bid-btn' : 'open-bid-btn'}
+              >
+                {bidStatus ? 'Close Bid' : 'Re-Open Bid'}
+              </button>
+              <button onClick={handleDelete} className="delete-btn">
+                Delete Painting
+              </button>
+            </div>
+          )}
+
+          {message && (
+            <p className={`message ${message.includes('success') ? 'success' : 'error'}`}>
+              {message}
+            </p>
+          )}
+
+          <BidHistory paintingId={id} />
         </div>
       </div>
     </div>

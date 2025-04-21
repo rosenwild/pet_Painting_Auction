@@ -1,7 +1,7 @@
 from app.database import SessionLocal
 from app.models.painting import Painting
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 from typing import List
 from uuid import UUID
@@ -12,6 +12,7 @@ from app.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 
+
 import uuid
 
 router = APIRouter(prefix="/paintings", tags=["paintings"])
@@ -21,14 +22,7 @@ router = APIRouter(prefix="/paintings", tags=["paintings"])
 def create_painting(
         painting: PaintingCreate,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != "admin":  # Убедитесь, что проверяется строка "admin"
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admin can create paintings"
-        )
-
     db_painting = PaintingModel(
         id=uuid.uuid4(),
         name=painting.name,
@@ -58,13 +52,7 @@ def read_paintings(
 def delete_painting(
         painting_id: UUID,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
 ):
-    if not current_user.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admin can delete paintings"
-        )
 
     db_painting = db.query(PaintingModel).filter(PaintingModel.id == painting_id).first()
     if not db_painting:
@@ -90,7 +78,8 @@ async def startup_event():
                     photo="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/970px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg",
                     author="Vincent van Gogh",
                     price=1000000,
-                    type="Oil on canvas"
+                    type="Oil on canvas",
+                    is_bid_active=True
                 ),
                 Painting(
                     id=uuid.uuid4(),
@@ -98,7 +87,8 @@ async def startup_event():
                     photo="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/1200px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg",
                     author="Leonardo da Vinci",
                     price=5000000,
-                    type="Oil on poplar"
+                    type="Oil on poplar",
+                    is_bid_active=False
                 )
             ]
             db.add_all(initial_paintings)
@@ -106,3 +96,45 @@ async def startup_event():
     finally:
         db.close()
 
+def get_current_admin(
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required"
+        )
+    return current_user
+
+
+# В вашем router (обычно в routes/paintings.py)
+
+@router.patch("/{painting_id}/toggle-bid", response_model=PaintingSchema)
+async def toggle_bid_status(
+        painting_id: UUID,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_admin)  # Проверка прав админа
+):
+    painting = db.query(Painting).filter(Painting.id == painting_id).first()
+    if not painting:
+        raise HTTPException(status_code=404, detail="Painting not found")
+
+    painting.is_bid_active = not painting.is_bid_active
+    db.commit()
+    db.refresh(painting)
+    return painting
+
+
+@router.delete("/{painting_id}", status_code=204)
+async def delete_painting(
+        painting_id: UUID,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_admin)  # Проверка прав админа
+):
+    painting = db.query(Painting).filter(Painting.id == painting_id).first()
+    if not painting:
+        raise HTTPException(status_code=404, detail="Painting not found")
+
+    db.delete(painting)
+    db.commit()
+    return Response(status_code=204)
