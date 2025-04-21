@@ -306,6 +306,15 @@ header a:hover {
   color: white;
 }
 
+.close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 2rem;
+    cursor: pointer;
+    color: #333;
+}
+
 /* стили сообщений */
 .message {
   margin-top: 10px;

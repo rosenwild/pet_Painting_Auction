@@ -65,6 +65,15 @@
   color: #333;
 }
 
+.close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 2rem;
+    cursor: pointer;
+    color: #333;
+}
+
 /* стили для формы ставки */
 .bid-section {
   margin: 2rem 0 1rem;
